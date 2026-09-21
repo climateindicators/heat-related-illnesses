@@ -1,0 +1,111 @@
+indicator:
+  name: Heat-Related Illnesses
+  slug: heat-related-illness-new
+  publisher: U.S. Environmental Protection Agency
+  source_page: https://19january2025snapshot.epa.gov/climate-indicators/heat-related-illnesses/index.html
+  technical_documentation: https://19january2025snapshot.epa.gov/sites/default/files/2021-03/documents/heat-illness_tech-doc.pdf
+  rights: Public domain, work of the U.S. Government (17 U.S.C. 105)
+datasets:
+- file: heat_illness_annual_rate.csv
+  figure: Figure 1
+  figure_title: Figure 1. Heat-Related Hospitalizations in 20 States, 2001–2010
+  source_file: heat-illnesses_fig-1.csv
+  source_sha256: cf2c98d9eaf411e93bdec56ca9dc0fb6e857b0d081260f4a7e0a277663aed091
+  source_encoding: windows-1252
+  data_source: Choudhary and Vaidyanathan, 2014
+  web_update: August 2016
+  unit: number of hospitalizations per 100,000 people
+  rows: 10
+  columns:
+  - name: year
+    type: integer
+    description: Calendar year.
+  - name: measure
+    type: string
+    description: What the `value` column measures.
+  - name: unit
+    type: string
+    description: Unit of `value`, taken from the source file's own Units line.
+  - name: value
+    type: number
+    description: Annual hospitalization rate across the 20-state group, verbatim from
+      the source file.
+  - name: flag
+    type: string
+    description: Empty for an ordinary observation. A non-empty flag would mean the
+      source withheld the value (e.g. a disclosure-threshold suppression); `value`
+      is empty whenever `flag` is set. No source row in this data update is flagged.
+  note: 20 states participating in CDC's hospitalization tracking program. Rate is
+    age-adjusted and covers May 1-September 30 of each year.
+- file: heat_illness_rate_by_state.csv
+  figure: Figure 2
+  figure_title: Figure 2. Average Rate of Heat-Related Hospitalizations in 23 States,
+    2001-2010
+  source_file: heat-illnesses_fig-2.csv
+  source_sha256: 2a437a213f2ffc2fbc2880695b4b251755880d705a401da230404d7f921ee0d6
+  source_encoding: UTF-8
+  data_source: CDC, 2016
+  web_update: August 2016
+  unit: average annual rate of hospitalizations per 100,000 people
+  rows: 23
+  columns:
+  - name: state
+    type: string
+    description: U.S. state name, verbatim from the source file.
+  - name: measure
+    type: string
+    description: What the `value` column measures.
+  - name: unit
+    type: string
+    description: Unit of `value`, taken from the source file's own Units line.
+  - name: value
+    type: number
+    description: 2001-2010 average hospitalization rate for that state, verbatim from
+      the source file.
+  - name: flag
+    type: string
+    description: Empty for an ordinary observation. A non-empty flag would mean the
+      source withheld the value (e.g. a disclosure-threshold suppression); `value`
+      is empty whenever `flag` is set. No source row in this data update is flagged.
+  note: 23 states participating in CDC's hospitalization tracking program. EPA published
+    this figure as a map.
+- file: heat_illness_by_sex_and_age.csv
+  figure: Figure 3
+  figure_title: Figure 3. Heat-Related Hospitalizations in 20 States by Sex and Age,
+    2001–2010
+  source_file: heat-illnesses_fig-3.csv
+  source_sha256: ab1fefdd4d5cb6b70015af437d401065bf0f94f9f45ec85a6399be9cc1ce571e
+  source_encoding: windows-1252
+  data_source: Choudhary and Vaidyanathan, 2014
+  web_update: August 2016
+  unit: total number of hospitalizations
+  rows: 7
+  columns:
+  - name: group_key
+    type: string
+    description: Machine-readable group identifier.
+  - name: group_label
+    type: string
+    description: Display label, verbatim from the source file's Group column.
+  - name: group_type
+    type: string
+    description: 'Which of EPA''s two independent breakdowns this row belongs to:
+      "sex" or "age". The two breakdowns are separate totals of the same underlying
+      hospitalizations and should not be summed together across types.'
+  - name: measure
+    type: string
+    description: What the `value` column measures.
+  - name: unit
+    type: string
+    description: Unit of `value`, taken from the source file's own Units line.
+  - name: value
+    type: number
+    description: Total hospitalizations, 2001-2010, verbatim from the source file.
+  - name: flag
+    type: string
+    description: Empty for an ordinary observation. A non-empty flag would mean the
+      source withheld the value (e.g. a disclosure-threshold suppression); `value`
+      is empty whenever `flag` is set. No source row in this data update is flagged.
+  note: 20 states participating in CDC's hospitalization tracking program. The sex
+    total (28,133) and the age total (28,119) differ by 14 hospitalizations in EPA's
+    own published figures; this is EPA's data, not a build error.

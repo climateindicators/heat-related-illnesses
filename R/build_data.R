@@ -6,10 +6,6 @@
 # data/meta.yml. Rerunning with unchanged inputs produces byte-identical output.
 # Nothing here touches the network.
 #
-# Generated as a stub by the build-indicator skill. Each figure below has a
-# `todo_reshape()` call standing where its reshape belongs. Replace that line,
-# then delete the todo_reshape() helper once no call to it remains.
-#
 # TO UPDATE THE DATA: drop replacement CSVs into data-raw/ and rerun. Headers
 # are asserted, not assumed, so a renamed or reordered column stops the build.
 
@@ -24,15 +20,6 @@ source(file.path(root, "R/utils/write_stable.R"))
 raw_dir <- file.path(root, "data-raw")
 out_dir <- file.path(root, "data")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-
-todo_reshape <- function(n) {
-  stop(
-    "R/build_data.R: the reshape for figure ", n, " has not been written yet.\n",
-    "Replace the todo_reshape(", n, ") call with the pivot that produces the tidy\n",
-    "long-format data frame for that figure, then remove this helper.",
-    call. = FALSE
-  )
-}
 
 # ---- Indicator constants -----------------------------------------------------
 
@@ -51,26 +38,28 @@ f1_path <- file.path(raw_dir, "heat-illnesses_fig-1.csv")
 f1_meta <- read_epa_preamble(f1_path)
 f1_raw  <- read_epa_csv(f1_path)
 
-# All columns are listed as expected headers so a rename or reorder stops the
-# build from the first run. When you write the reshape, move the identifier
-# columns into id_cols so the split between keys and series is explicit.
+# This source file is already tidy: one row per year, carrying the annual
+# hospitalization rate across the 20-state group. There is no wide-to-long
+# pivot, so the reshape only names what the bare value column measures.
 assert_headers(
   f1_raw,
-  id_cols          = character(),
-  expected_headers = c("Year", "Hospitalizations per 100,000 people"),
+  id_cols          = "Year",
+  expected_headers = "Hospitalizations per 100,000 people",
   what             = "heat-illnesses_fig-1.csv"
 )
 
-# TODO reshape: 10 rows, Year + 1 series.
-# Source headers: Year | Hospitalizations per 100,000 people
-# Units line: number of hospitalizations per 100,000 people
-# Produce a tidy long-format data frame. Keep every value as character: the
-# source carries up to 10 significant digits and must survive byte for byte.
-f1 <- todo_reshape(1)
+f1_split <- split_value_flag(f1_raw[["Hospitalizations per 100,000 people"]])
 
-# The output name below is a placeholder. Rename it for what the figure
-# actually carries, the way river_flooding_magnitude.csv does.
-write_csv_stable(f1, file.path(out_dir, "heat_related_illness_new_fig1.csv"))
+f1 <- f1_raw |>
+  dplyr::transmute(
+    year    = as.integer(Year),
+    measure = "annual_hospitalization_rate",
+    unit    = f1_meta$units,
+    value   = f1_split$value,
+    flag    = f1_split$flag
+  )
+
+write_csv_stable(f1, file.path(out_dir, "heat_illness_annual_rate.csv"))
 
 # ---- Figure 2: Average Rate of Heat-Related Hospitalizations in 23 States, 2001-2010 ----
 
@@ -78,26 +67,26 @@ f2_path <- file.path(raw_dir, "heat-illnesses_fig-2.csv")
 f2_meta <- read_epa_preamble(f2_path)
 f2_raw  <- read_epa_csv(f2_path)
 
-# All columns are listed as expected headers so a rename or reorder stops the
-# build from the first run. When you write the reshape, move the identifier
-# columns into id_cols so the split between keys and series is explicit.
+# Already tidy: one row per state, carrying its 2001-2010 average rate.
 assert_headers(
   f2_raw,
-  id_cols          = character(),
-  expected_headers = c("State", "2001-2010 average"),
+  id_cols          = "State",
+  expected_headers = "2001-2010 average",
   what             = "heat-illnesses_fig-2.csv"
 )
 
-# TODO reshape: 23 rows, State + 1 series.
-# Source headers: State | 2001-2010 average
-# Units line: average annual rate of hospitalizations per 100,000 people
-# Produce a tidy long-format data frame. Keep every value as character: the
-# source carries up to 10 significant digits and must survive byte for byte.
-f2 <- todo_reshape(2)
+f2_split <- split_value_flag(f2_raw[["2001-2010 average"]])
 
-# The output name below is a placeholder. Rename it for what the figure
-# actually carries, the way river_flooding_magnitude.csv does.
-write_csv_stable(f2, file.path(out_dir, "heat_related_illness_new_fig2.csv"))
+f2 <- f2_raw |>
+  dplyr::transmute(
+    state   = State,
+    measure = "average_annual_rate_2001_2010",
+    unit    = f2_meta$units,
+    value   = f2_split$value,
+    flag    = f2_split$flag
+  )
+
+write_csv_stable(f2, file.path(out_dir, "heat_illness_rate_by_state.csv"))
 
 # ---- Figure 3: Heat-Related Hospitalizations in 20 States by Sex and Age, 2001–2010 ----
 
@@ -105,26 +94,50 @@ f3_path <- file.path(raw_dir, "heat-illnesses_fig-3.csv")
 f3_meta <- read_epa_preamble(f3_path)
 f3_raw  <- read_epa_csv(f3_path)
 
-# All columns are listed as expected headers so a rename or reorder stops the
-# build from the first run. When you write the reshape, move the identifier
-# columns into id_cols so the split between keys and series is explicit.
 assert_headers(
   f3_raw,
-  id_cols          = character(),
-  expected_headers = c("Group", "Number of hospitalizations reported"),
+  id_cols          = "Group",
+  expected_headers = "Number of hospitalizations reported",
   what             = "heat-illnesses_fig-3.csv"
 )
 
-# TODO reshape: 7 rows, Group/Number of hospitalizations reported.
-# Source headers: Group | Number of hospitalizations reported
-# Units line: total number of hospitalizations
-# Produce a tidy long-format data frame. Keep every value as character: the
-# source carries up to 10 significant digits and must survive byte for byte.
-f3 <- todo_reshape(3)
+# EPA's Group column packs two independent breakdowns of the same 20-state,
+# 2001-2010 total into one axis: by sex (Male, Female) and by age group (0-4
+# through 65+). group_type keeps the two apart so they are never summed
+# together as if they were seven peers of each other; the totals genuinely
+# differ (28,133 by sex vs. 28,119 by age in EPA's own published figures).
+FIG3_GROUPS <- tibble::tribble(
+  ~source_header, ~group_key,    ~group_label, ~group_type,
+  "Male",         "male",        "Male",       "sex",
+  "Female",       "female",      "Female",     "sex",
+  "0-4",          "age_0_4",     "0-4",        "age",
+  "5-14",         "age_5_14",    "5-14",       "age",
+  "15-34",        "age_15_34",   "15-34",      "age",
+  "35-64",        "age_35_64",   "35-64",      "age",
+  "65+",          "age_65_plus", "65+",        "age"
+)
 
-# The output name below is a placeholder. Rename it for what the figure
-# actually carries, the way river_flooding_magnitude.csv does.
-write_csv_stable(f3, file.path(out_dir, "heat_related_illness_new_fig3.csv"))
+stopifnot(
+  "figure 3: every Group value is a recognised sex or age category" =
+    all(f3_raw$Group %in% FIG3_GROUPS$source_header),
+  "figure 3: no duplicate Group values" = !any(duplicated(f3_raw$Group))
+)
+
+f3_split <- split_value_flag(f3_raw[["Number of hospitalizations reported"]])
+f3_idx   <- match(f3_raw$Group, FIG3_GROUPS$source_header)
+
+f3 <- f3_raw |>
+  dplyr::transmute(
+    group_key   = FIG3_GROUPS$group_key[f3_idx],
+    group_label = FIG3_GROUPS$group_label[f3_idx],
+    group_type  = FIG3_GROUPS$group_type[f3_idx],
+    measure     = "total_hospitalizations_2001_2010",
+    unit        = f3_meta$units,
+    value       = f3_split$value,
+    flag        = f3_split$flag
+  )
+
+write_csv_stable(f3, file.path(out_dir, "heat_illness_by_sex_and_age.csv"))
 
 # ---- Data dictionary ---------------------------------------------------------
 
@@ -132,52 +145,84 @@ col <- function(name, type, description) {
   list(name = name, type = type, description = description)
 }
 
-# One entry per output column, in order, filled from the data frame itself so it
-# cannot drift. `type` and `description` are deliberately blank: tests/test-data.R
-# fails while either is empty, so every column has to be documented by hand.
-describe <- function(df) lapply(names(df), function(nm) col(nm, "", ""))
+flag_col_note <- paste(
+  "Empty for an ordinary observation. A non-empty flag would mean the source",
+  "withheld the value (e.g. a disclosure-threshold suppression); `value` is",
+  "empty whenever `flag` is set. No source row in this data update is flagged."
+)
 
 meta <- list(
   indicator = INDICATOR,
   datasets = list(
     list(
-      file            = "heat_related_illness_new_fig1.csv",
+      file            = "heat_illness_annual_rate.csv",
       figure          = "Figure 1",
       figure_title    = f1_meta$title,
       source_file     = "heat-illnesses_fig-1.csv",
       source_sha256   = file_sha256(f1_path),
-      source_encoding = "windows-1252",
+      source_encoding = f1_meta$encoding,
       data_source     = f1_meta$data_source,
       web_update      = f1_meta$web_update,
       unit            = f1_meta$units,
       rows            = nrow(f1),
-      columns         = describe(f1)
+      columns = list(
+        col("year", "integer", "Calendar year."),
+        col("measure", "string", "What the `value` column measures."),
+        col("unit", "string", "Unit of `value`, taken from the source file's own Units line."),
+        col("value", "number", "Annual hospitalization rate across the 20-state group, verbatim from the source file."),
+        col("flag", "string", flag_col_note)
+      ),
+      note = paste(
+        "20 states participating in CDC's hospitalization tracking program.",
+        "Rate is age-adjusted and covers May 1-September 30 of each year."
+      )
     ),
     list(
-      file            = "heat_related_illness_new_fig2.csv",
+      file            = "heat_illness_rate_by_state.csv",
       figure          = "Figure 2",
       figure_title    = f2_meta$title,
       source_file     = "heat-illnesses_fig-2.csv",
       source_sha256   = file_sha256(f2_path),
-      source_encoding = "UTF-8",
+      source_encoding = f2_meta$encoding,
       data_source     = f2_meta$data_source,
       web_update      = f2_meta$web_update,
       unit            = f2_meta$units,
       rows            = nrow(f2),
-      columns         = describe(f2)
+      columns = list(
+        col("state", "string", "U.S. state name, verbatim from the source file."),
+        col("measure", "string", "What the `value` column measures."),
+        col("unit", "string", "Unit of `value`, taken from the source file's own Units line."),
+        col("value", "number", "2001-2010 average hospitalization rate for that state, verbatim from the source file."),
+        col("flag", "string", flag_col_note)
+      ),
+      note = "23 states participating in CDC's hospitalization tracking program. EPA published this figure as a map."
     ),
     list(
-      file            = "heat_related_illness_new_fig3.csv",
+      file            = "heat_illness_by_sex_and_age.csv",
       figure          = "Figure 3",
       figure_title    = f3_meta$title,
       source_file     = "heat-illnesses_fig-3.csv",
       source_sha256   = file_sha256(f3_path),
-      source_encoding = "windows-1252",
+      source_encoding = f3_meta$encoding,
       data_source     = f3_meta$data_source,
       web_update      = f3_meta$web_update,
       unit            = f3_meta$units,
       rows            = nrow(f3),
-      columns         = describe(f3)
+      columns = list(
+        col("group_key", "string", "Machine-readable group identifier."),
+        col("group_label", "string", "Display label, verbatim from the source file's Group column."),
+        col("group_type", "string", "Which of EPA's two independent breakdowns this row belongs to: \"sex\" or \"age\". The two breakdowns are separate totals of the same underlying hospitalizations and should not be summed together across types."),
+        col("measure", "string", "What the `value` column measures."),
+        col("unit", "string", "Unit of `value`, taken from the source file's own Units line."),
+        col("value", "number", "Total hospitalizations, 2001-2010, verbatim from the source file."),
+        col("flag", "string", flag_col_note)
+      ),
+      note = paste(
+        "20 states participating in CDC's hospitalization tracking program.",
+        "The sex total (28,133) and the age total (28,119) differ by 14",
+        "hospitalizations in EPA's own published figures; this is EPA's data,",
+        "not a build error."
+      )
     )
   )
 )

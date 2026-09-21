@@ -1,0 +1,8 @@
+group_key,group_label,group_type,measure,unit,value,flag
+male,Male,sex,total_hospitalizations_2001_2010,total number of hospitalizations,19457,
+female,Female,sex,total_hospitalizations_2001_2010,total number of hospitalizations,8676,
+age_0_4,0-4,age,total_hospitalizations_2001_2010,total number of hospitalizations,285,
+age_5_14,5-14,age,total_hospitalizations_2001_2010,total number of hospitalizations,389,
+age_15_34,15-34,age,total_hospitalizations_2001_2010,total number of hospitalizations,4070,
+age_35_64,35-64,age,total_hospitalizations_2001_2010,total number of hospitalizations,11486,
+age_65_plus,65+,age,total_hospitalizations_2001_2010,total number of hospitalizations,11889,
